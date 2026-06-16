@@ -266,6 +266,82 @@
   .notes-label { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted); font-family:'Space Mono',monospace; margin-bottom:8px; }
   .notes-display { padding:12px 14px; background:var(--bg); border:1px solid var(--border); border-radius:10px; font-size:13px; color:var(--muted); line-height:1.6; min-height:60px; white-space:pre-wrap; }
 
+  /* Priority score badge on card */
+  .priority-badge {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:2px 8px; border-radius:100px;
+    font-family:'Space Mono',monospace; font-size:9px; font-weight:700;
+    background:rgba(245,158,11,0.12); color:#fcd34d; border:1px solid rgba(245,158,11,0.3);
+  }
+  .priority-badge.unset { background:rgba(255,255,255,0.04); color:var(--muted); border-color:var(--border); }
+  .card-meta { display:flex; align-items:center; justify-content:space-between; }
+
+  /* Sort bar */
+  .sort-bar { display:flex; gap:6px; padding:0 20px 12px; }
+  .sort-btn {
+    flex:1; padding:6px 8px; border-radius:6px;
+    border:2px solid var(--border); background:transparent;
+    color:var(--muted); font-family:'Space Mono',monospace; font-size:10px; font-weight:700;
+    cursor:pointer; transition:all 0.15s; text-align:center; white-space:nowrap;
+  }
+  .sort-btn.active { border-color:#ffffff; color:#ffffff; background:rgba(255,255,255,0.07); }
+  .sort-btn:active { transform:scale(0.97); }
+
+  /* Priority section in detail modal */
+  .priority-section { margin-top:20px; border:2px solid var(--border); border-radius:12px; overflow:hidden; }
+  .priority-section-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; cursor:pointer; user-select:none;
+    background:var(--bg); transition:background 0.15s;
+  }
+  .priority-section-header:active { background:var(--border); }
+  .priority-section-title {
+    display:flex; align-items:center; gap:8px;
+    font-family:'Space Mono',monospace; font-size:11px; font-weight:700;
+    letter-spacing:0.5px; text-transform:uppercase; color:var(--text);
+  }
+  .priority-score-display {
+    font-family:'Space Mono',monospace; font-size:13px; font-weight:700; color:#fcd34d;
+  }
+  .priority-chevron { color:var(--muted); font-size:12px; transition:transform 0.25s; }
+  .priority-section.open .priority-chevron { transform:rotate(180deg); }
+  .priority-body {
+    max-height:0; overflow:hidden;
+    transition:max-height 0.35s cubic-bezier(0.4,0,0.2,1);
+    background:var(--surface);
+  }
+  .priority-section.open .priority-body { max-height:700px; }
+  .priority-body-inner { padding:16px; display:flex; flex-direction:column; gap:18px; }
+
+  .priority-field-label {
+    font-family:'Space Mono',monospace; font-size:10px; font-weight:700;
+    letter-spacing:0.8px; text-transform:uppercase; color:var(--text); margin-bottom:4px;
+  }
+  .priority-field-desc { font-size:11px; color:var(--muted); line-height:1.5; margin-bottom:8px; }
+  .priority-slider-row { display:flex; align-items:center; gap:10px; }
+  .priority-slider {
+    flex:1; -webkit-appearance:none; appearance:none;
+    height:4px; border-radius:4px; background:var(--border); outline:none; cursor:pointer;
+  }
+  .priority-slider::-webkit-slider-thumb {
+    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:#ffffff; border:2px solid var(--accent); cursor:pointer;
+    box-shadow:0 0 0 3px rgba(124,58,237,0.2);
+  }
+  .priority-slider::-moz-range-thumb {
+    width:18px; height:18px; border-radius:50%;
+    background:#ffffff; border:2px solid var(--accent); cursor:pointer;
+  }
+  .priority-slider-val {
+    font-family:'Space Mono',monospace; font-size:13px; font-weight:700;
+    color:#ffffff; min-width:20px; text-align:right;
+  }
+  .priority-formula-note {
+    font-family:'Space Mono',monospace; font-size:9px; color:var(--muted);
+    text-align:center; padding-top:8px; border-top:1px solid var(--border);
+    letter-spacing:0.3px;
+  }
+
   ::-webkit-scrollbar { width:0; height:0; }
 </style>
 </head>
@@ -296,6 +372,7 @@
 </div>
 <div class="stats-bar" id="statsBar"></div>
 <div class="filter-tabs" id="filterTabs"></div>
+<div class="sort-bar" id="sortBar"></div>
 <div class="section-header" id="sectionHeader"></div>
 <div class="cards" id="cardsContainer"></div>
 
@@ -352,6 +429,66 @@
       <div class="notes-label">Notes</div>
       <div class="notes-display" id="detailNotes"></div>
     </div>
+
+    <div class="priority-section" id="prioritySection">
+      <div class="priority-section-header" onclick="togglePrioritySection()">
+        <div class="priority-section-title">⚡ Priority Score <span class="priority-score-display" id="priorityScoreDisplay">—</span></div>
+        <span class="priority-chevron" id="priorityChevron">▼</span>
+      </div>
+      <div class="priority-body">
+        <div class="priority-body-inner">
+
+          <div>
+            <div class="priority-field-label">⚡ Frequency × Annoyance <span style="color:var(--accent3);font-size:9px">(worth 40%)</span></div>
+            <div class="priority-field-desc">How often does this come up, and how painful is it without the skill? <em>High: daily task you dread (like email triage or writing). Low: something you do once a month without much friction.</em></div>
+            <div style="margin-bottom:10px">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:'Space Mono',monospace">FREQUENCY</div>
+              <div class="priority-slider-row">
+                <input type="range" class="priority-slider" id="sliderFreq" min="1" max="10" value="5" oninput="onSliderChange()">
+                <div class="priority-slider-val" id="valFreq">5</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:'Space Mono',monospace">ANNOYANCE</div>
+              <div class="priority-slider-row">
+                <input type="range" class="priority-slider" id="sliderAnnoyance" min="1" max="10" value="5" oninput="onSliderChange()">
+                <div class="priority-slider-val" id="valAnnoyance">5</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="priority-field-label">🔗 Leverage <span style="color:var(--accent3);font-size:9px">(worth 20%)</span></div>
+            <div class="priority-field-desc">Does building this unlock or amplify other skills? <em>High: a Calendar PA or time audit that feeds into 3 other trackers. Low: a one-off skill that only helps itself, like the fridge chef.</em></div>
+            <div class="priority-slider-row">
+              <input type="range" class="priority-slider" id="sliderLeverage" min="1" max="10" value="5" oninput="onSliderChange()">
+              <div class="priority-slider-val" id="valLeverage">5</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="priority-field-label">🚀 Activation Energy <span style="color:var(--accent3);font-size:9px">(worth 20%)</span></div>
+            <div class="priority-field-desc">Does this remove a blocker that stops you starting? <em>High: you already made a "get ready to study" skill because you genuinely don't study without the ritual. Low: things you'd do anyway, just slower.</em></div>
+            <div class="priority-slider-row">
+              <input type="range" class="priority-slider" id="sliderActivation" min="1" max="10" value="5" oninput="onSliderChange()">
+              <div class="priority-slider-val" id="valActivation">5</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="priority-field-label">📅 Transferability <span style="color:var(--accent3);font-size:9px">(worth 20%)</span></div>
+            <div class="priority-field-desc">Will this still matter in 6–12 months? <em>High: email sorter, calendar PA, WhisperFlow transforms — useful regardless of what you're working on. Low: lecture revision (tied to being a student) or MARS coaching (role-specific).</em></div>
+            <div class="priority-slider-row">
+              <input type="range" class="priority-slider" id="sliderTransferability" min="1" max="10" value="5" oninput="onSliderChange()">
+              <div class="priority-slider-val" id="valTransferability">5</div>
+            </div>
+          </div>
+
+          <div class="priority-formula-note">score = (freq × annoyance × 0.4) + (leverage × 2) + (activation × 2) + (transferability × 2) · max 100</div>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-actions" style="margin-top:20px">
       <button class="btn btn-danger" onclick="deleteProject()">Delete</button>
       <button class="btn btn-secondary" onclick="editProject()">Edit</button>
@@ -380,6 +517,8 @@ let selectedStage = 0;
 let editingId = null;
 let detailId = null;
 let searchQuery = '';
+let currentSort = 'priority-desc'; // priority-desc | priority-asc | stage-asc | stage-desc
+let saveTimer = null;
 
 // ── Sync UI helpers ─────────────────────────────────────────────
 function setSyncState(state) {
@@ -405,6 +544,7 @@ async function load() {
     stage: p.stage || 0,
     tags: p.tags || [],
     notes: p.notes || '',
+    priority: p.priority || {},
     created: new Date(p.created_at).getTime(),
   }));
   setSyncState('ok');
@@ -471,6 +611,7 @@ async function adjustStage(delta) {
 function render() {
   renderStats();
   renderTabs();
+  renderSortBar();
   renderCards();
 }
 
@@ -497,6 +638,13 @@ function renderCards() {
     p.desc.toLowerCase().includes(searchQuery) ||
     p.notes.toLowerCase().includes(searchQuery)
   );
+  filtered = [...filtered].sort((a, b) => {
+    if (currentSort === 'priority-desc') return (calcScore(b) ?? -1) - (calcScore(a) ?? -1);
+    if (currentSort === 'priority-asc')  return (calcScore(a) ?? 101) - (calcScore(b) ?? 101);
+    if (currentSort === 'stage-asc')     return a.stage - b.stage;
+    if (currentSort === 'stage-desc')    return b.stage - a.stage;
+    return 0;
+  });
   const container = document.getElementById('cardsContainer');
   const header = document.getElementById('sectionHeader');
 
@@ -517,6 +665,9 @@ function renderCards() {
       `<div class="pipe-step ${i < p.stage ? 'done' : i === p.stage ? 'active' : ''}"></div>${i < STAGES.length-1 ? '<div class="pipe-dot"></div>' : ''}`
     ).join('');
     const date = new Date(p.created).toLocaleDateString('en-AU', {month:'short', day:'numeric'});
+    const score = calcScore(p);
+    const badgeClass = score === null ? 'priority-badge unset' : 'priority-badge';
+    const badgeText = score === null ? '⚡ —' : `⚡ ${score}`;
     return `
       <div class="card" data-stage="${p.stage}" onclick="openDetail(${p.id})">
         <div class="card-top">
@@ -525,13 +676,68 @@ function renderCards() {
         </div>
         ${p.desc ? `<div class="card-desc">${esc(p.desc.slice(0,90))}${p.desc.length>90?'…':''}</div>` : ''}
         <div class="pipeline">${pipes}</div>
-        <div class="card-meta"><div class="card-date">${date}</div></div>
+        <div class="card-meta"><div class="${badgeClass}">${badgeText}</div><div class="card-date">${date}</div></div>
       </div>`;
   }).join('');
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function setFilter(key) { currentFilter = key; render(); }
+function setSort(key) { currentSort = key; render(); }
+
+function calcScore(p) {
+  const pr = p.priority || {};
+  if (!pr.freq && !pr.annoyance && !pr.leverage && !pr.activation && !pr.transferability) return null;
+  const freq = pr.freq || 1;
+  const ann  = pr.annoyance || 1;
+  const lev  = pr.leverage || 1;
+  const act  = pr.activation || 1;
+  const tra  = pr.transferability || 1;
+  return Math.round(freq * ann * 0.4 + lev * 2 + act * 2 + tra * 2);
+}
+
+function renderSortBar() {
+  const modes = [
+    { key:'priority-desc', label:'⚡ ↓' },
+    { key:'priority-asc',  label:'⚡ ↑' },
+    { key:'stage-asc',     label:'Stage ↑' },
+    { key:'stage-desc',    label:'Stage ↓' },
+  ];
+  document.getElementById('sortBar').innerHTML = modes.map(m =>
+    `<button class="sort-btn ${currentSort===m.key?'active':''}" onclick="setSort('${m.key}')">${m.label}</button>`
+  ).join('');
+}
+
+function togglePrioritySection() {
+  document.getElementById('prioritySection').classList.toggle('open');
+}
+
+function onSliderChange() {
+  const freq = parseInt(document.getElementById('sliderFreq').value);
+  const ann  = parseInt(document.getElementById('sliderAnnoyance').value);
+  const lev  = parseInt(document.getElementById('sliderLeverage').value);
+  const act  = parseInt(document.getElementById('sliderActivation').value);
+  const tra  = parseInt(document.getElementById('sliderTransferability').value);
+  document.getElementById('valFreq').textContent = freq;
+  document.getElementById('valAnnoyance').textContent = ann;
+  document.getElementById('valLeverage').textContent = lev;
+  document.getElementById('valActivation').textContent = act;
+  document.getElementById('valTransferability').textContent = tra;
+  const score = Math.round(freq * ann * 0.4 + lev * 2 + act * 2 + tra * 2);
+  document.getElementById('priorityScoreDisplay').textContent = score;
+  const p = projects.find(x => x.id === detailId);
+  if (p) { p.priority = { freq, annoyance: ann, leverage: lev, activation: act, transferability: tra }; renderCards(); }
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => savePriority({ freq, annoyance: ann, leverage: lev, activation: act, transferability: tra }), 800);
+}
+
+async function savePriority(pr) {
+  if (!detailId) return;
+  setSyncState('syncing');
+  const { error } = await sb.from('projects').update({ priority: pr }).eq('id', detailId);
+  if (error) { setSyncState('error'); console.error(error); return; }
+  setSyncState('ok');
+}
 
 function toggleSearch() {
   const wrap = document.getElementById('searchBarWrap');
@@ -604,6 +810,19 @@ function openDetail(id) {
   const notesSection = document.getElementById('notesSection');
   if (p.notes) { document.getElementById('detailNotes').textContent = p.notes; notesSection.style.display = 'block'; }
   else { notesSection.style.display = 'none'; }
+  // Populate priority sliders
+  const pr = p.priority || {};
+  const fields = ['Freq','Annoyance','Leverage','Activation','Transferability'];
+  const keys   = ['freq','annoyance','leverage','activation','transferability'];
+  keys.forEach((k, i) => {
+    const val = pr[k] || 5;
+    document.getElementById('slider' + fields[i]).value = val;
+    document.getElementById('val'   + fields[i]).textContent = val;
+  });
+  const score = calcScore(p);
+  document.getElementById('priorityScoreDisplay').textContent = score !== null ? score : '—';
+  // Reset collapsed state
+  document.getElementById('prioritySection').classList.remove('open');
   document.getElementById('detailModal').classList.add('open');
 }
 

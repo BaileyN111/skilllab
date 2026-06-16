@@ -61,12 +61,14 @@
   .logo-text { font-size:18px; font-weight:800; letter-spacing:-0.5px; }
   .logo-text span { color:var(--accent2); }
   .add-btn {
-    width:36px; height:36px; border-radius:50%;
-    border:1.5px solid var(--accent); background:transparent; color:var(--accent);
-    font-size:22px; display:flex; align-items:center; justify-content:center;
-    cursor:pointer; transition:all 0.2s;
+    display:flex; align-items:center; gap:6px;
+    padding:8px 16px; border-radius:8px;
+    border:2px solid #ffffff; background:#ffffff; color:#0a0a0f;
+    font-family:'Syne',sans-serif; font-size:13px; font-weight:800;
+    letter-spacing:0.3px; cursor:pointer; transition:all 0.15s;
+    white-space:nowrap;
   }
-  .add-btn:active { transform:scale(0.9); background:var(--accent); color:white; }
+  .add-btn:active { transform:scale(0.96); background:#e0e0e0; border-color:#e0e0e0; }
 
   .stats-bar { display:flex; gap:10px; padding:16px 20px; overflow-x:auto; scrollbar-width:none; }
   .stats-bar::-webkit-scrollbar { display:none; }
@@ -129,9 +131,7 @@
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
   .pipe-dot { width:3px; flex-shrink:0; height:4px; background:var(--bg); }
 
-  .card-meta { display:flex; align-items:center; justify-content:space-between; }
-  .tags { display:flex; gap:5px; flex-wrap:wrap; }
-  .tag { padding:2px 8px; background:rgba(255,255,255,0.05); border-radius:4px; font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); }
+  .card-meta { display:flex; align-items:center; justify-content:flex-end; }
   .card-date { font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); }
 
   .section-header { padding:8px 20px; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); font-family:'Space Mono',monospace; }
@@ -192,18 +192,6 @@
   .stage-opt[data-s="3"].selected { color:#6ee7b7; background:rgba(16,185,129,0.12); border-color:#6ee7b7; }
   .stage-opt[data-s="4"].selected { color:#fcd34d; background:rgba(245,158,11,0.12); border-color:#fcd34d; }
 
-  .tags-input {
-    display:flex; flex-wrap:wrap; gap:6px; padding:8px;
-    background:var(--bg); border:1px solid var(--border); border-radius:10px;
-    min-height:44px; cursor:text;
-  }
-  .tag-pill {
-    background:rgba(124,58,237,0.2); border:1px solid rgba(124,58,237,0.4);
-    color:#a78bfa; padding:2px 8px; border-radius:100px; font-size:12px;
-    display:flex; align-items:center; gap:4px;
-  }
-  .tag-pill button { background:none; border:none; color:inherit; cursor:pointer; font-size:14px; padding:0; line-height:1; }
-  .tag-input-field { background:none; border:none; outline:none; color:var(--text); font-family:'Syne',sans-serif; font-size:13px; min-width:80px; flex:1; }
 
   .modal-actions { display:flex; gap:10px; margin-top:20px; }
   .btn { flex:1; padding:14px; border-radius:12px; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; cursor:pointer; border:none; transition:all 0.2s; }
@@ -258,7 +246,7 @@
       <div class="logo-mark">AI</div>
       <div class="logo-text">SKILL<span>LAB</span></div>
     </div>
-    <button class="add-btn" onclick="openAddModal()">+</button>
+    <button class="add-btn" onclick="openAddModal()">+ New Skill</button>
   </div>
 </div>
 
@@ -290,12 +278,7 @@
         <button class="stage-opt" data-s="4">✨ Refine</button>
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Tags (press Enter or comma)</label>
-      <div class="tags-input" id="tagsContainer" onclick="document.getElementById('tagField').focus()">
-        <input class="tag-input-field" id="tagField" placeholder="python, llm, agents…" maxlength="20">
-      </div>
-    </div>
+
     <div class="form-group">
       <label class="form-label">Notes</label>
       <textarea class="form-textarea" id="inputNotes" placeholder="Links, ideas, references…"></textarea>
@@ -352,7 +335,6 @@ let currentFilter = 'all';
 let selectedStage = 0;
 let editingId = null;
 let detailId = null;
-let tags = [];
 
 // ── Sync UI helpers ─────────────────────────────────────────────
 function setSyncState(state) {
@@ -403,7 +385,6 @@ async function saveProject() {
     name,
     description: document.getElementById('inputDesc').value.trim(),
     stage: selectedStage,
-    tags: [...tags],
     notes: document.getElementById('inputNotes').value.trim(),
   };
 
@@ -485,7 +466,6 @@ function renderCards() {
     const pipes = STAGES.map((_, i) =>
       `<div class="pipe-step ${i < p.stage ? 'done' : i === p.stage ? 'active' : ''}"></div>${i < STAGES.length-1 ? '<div class="pipe-dot"></div>' : ''}`
     ).join('');
-    const tagHtml = p.tags?.length ? p.tags.slice(0,3).map(t => `<span class="tag">${esc(t)}</span>`).join('') : '';
     const date = new Date(p.created).toLocaleDateString('en-AU', {month:'short', day:'numeric'});
     return `
       <div class="card" data-stage="${p.stage}" onclick="openDetail(${p.id})">
@@ -495,7 +475,7 @@ function renderCards() {
         </div>
         ${p.desc ? `<div class="card-desc">${esc(p.desc.slice(0,90))}${p.desc.length>90?'…':''}</div>` : ''}
         <div class="pipeline">${pipes}</div>
-        <div class="card-meta"><div class="tags">${tagHtml}</div><div class="card-date">${date}</div></div>
+        <div class="card-meta"><div class="card-date">${date}</div></div>
       </div>`;
   }).join('');
 }
@@ -505,23 +485,23 @@ function setFilter(key) { currentFilter = key; render(); }
 
 // ── Modals ───────────────────────────────────────────────────────
 function openAddModal() {
-  editingId = null; tags = [];
+  editingId = null;
   document.getElementById('modalTitle').textContent = 'New Skill / Project';
   document.getElementById('inputName').value = '';
   document.getElementById('inputDesc').value = '';
   document.getElementById('inputNotes').value = '';
-  renderTagPills(); selectStage(0);
+  selectStage(0);
   document.getElementById('addModal').classList.add('open');
   setTimeout(() => document.getElementById('inputName').focus(), 400);
 }
 
 function openEditModal(p) {
-  editingId = p.id; tags = [...(p.tags || [])];
+  editingId = p.id;
   document.getElementById('modalTitle').textContent = 'Edit Project';
   document.getElementById('inputName').value = p.name;
   document.getElementById('inputDesc').value = p.desc || '';
   document.getElementById('inputNotes').value = p.notes || '';
-  renderTagPills(); selectStage(p.stage);
+  selectStage(p.stage);
   document.getElementById('addModal').classList.add('open');
 }
 
@@ -534,24 +514,6 @@ function selectStage(s) {
 }
 document.querySelectorAll('.stage-opt').forEach(btn => btn.addEventListener('click', () => selectStage(parseInt(btn.dataset.s))));
 
-document.getElementById('tagField').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(this.value.trim().replace(/,/g,'')); this.value = ''; }
-  else if (e.key === 'Backspace' && !this.value && tags.length) { tags.pop(); renderTagPills(); }
-});
-function addTag(t) { if (t && !tags.includes(t) && tags.length < 6) { tags.push(t); renderTagPills(); } }
-function removeTag(i) { tags.splice(i, 1); renderTagPills(); }
-function renderTagPills() {
-  const container = document.getElementById('tagsContainer');
-  const field = document.getElementById('tagField');
-  container.innerHTML = '';
-  tags.forEach((t, i) => {
-    const pill = document.createElement('div');
-    pill.className = 'tag-pill';
-    pill.innerHTML = `${esc(t)}<button onclick="removeTag(${i})">×</button>`;
-    container.appendChild(pill);
-  });
-  container.appendChild(field);
-}
 
 function openDetail(id) {
   const p = projects.find(x => x.id === id);

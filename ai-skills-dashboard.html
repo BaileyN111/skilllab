@@ -60,6 +60,7 @@
   }
   .logo-text { font-size:18px; font-weight:800; letter-spacing:-0.5px; }
   .logo-text span { color:var(--accent2); }
+  .header-actions { display:flex; align-items:center; gap:8px; }
   .add-btn {
     display:flex; align-items:center; gap:6px;
     padding:8px 16px; border-radius:8px;
@@ -69,6 +70,39 @@
     white-space:nowrap;
   }
   .add-btn:active { transform:scale(0.96); background:#e0e0e0; border-color:#e0e0e0; }
+  .search-toggle-btn {
+    display:flex; align-items:center; justify-content:center;
+    width:38px; height:38px; border-radius:8px;
+    border:2px solid var(--border); background:transparent; color:var(--text);
+    font-size:16px; cursor:pointer; transition:all 0.15s; flex-shrink:0;
+  }
+  .search-toggle-btn:active { transform:scale(0.96); }
+  .search-toggle-btn.active { border-color:#ffffff; background:#ffffff; color:#0a0a0f; }
+
+  .search-bar-wrap {
+    overflow:hidden; max-height:0;
+    transition:max-height 0.3s cubic-bezier(0.4,0,0.2,1), padding 0.3s;
+    padding:0 20px;
+  }
+  .search-bar-wrap.open { max-height:72px; padding:10px 20px 4px; }
+  .search-bar-inner {
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface); border:2px solid var(--border); border-radius:10px;
+    padding:0 14px; transition:border-color 0.2s;
+  }
+  .search-bar-inner:focus-within { border-color:#ffffff; }
+  .search-icon { color:var(--muted); font-size:14px; flex-shrink:0; }
+  .search-input {
+    flex:1; background:none; border:none; outline:none;
+    color:var(--text); font-family:'Syne',sans-serif; font-size:14px;
+    font-weight:600; padding:12px 0;
+  }
+  .search-input::placeholder { color:var(--muted); font-weight:400; }
+  .search-clear {
+    background:none; border:none; color:var(--muted); cursor:pointer;
+    font-size:18px; line-height:1; padding:0; display:none;
+  }
+  .search-clear.visible { display:block; }
 
   .stats-bar { display:flex; gap:10px; padding:16px 20px; overflow-x:auto; scrollbar-width:none; }
   .stats-bar::-webkit-scrollbar { display:none; }
@@ -246,10 +280,20 @@
       <div class="logo-mark">AI</div>
       <div class="logo-text">SKILL<span>LAB</span></div>
     </div>
-    <button class="add-btn" onclick="openAddModal()">+ New Skill</button>
+    <div class="header-actions">
+      <button class="search-toggle-btn" id="searchToggleBtn" onclick="toggleSearch()" title="Search">🔍</button>
+      <button class="add-btn" onclick="openAddModal()">+ New Skill</button>
+    </div>
   </div>
 </div>
 
+<div class="search-bar-wrap" id="searchBarWrap">
+  <div class="search-bar-inner">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" placeholder="Search skills & projects…" oninput="onSearchInput(this.value)">
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">×</button>
+  </div>
+</div>
 <div class="stats-bar" id="statsBar"></div>
 <div class="filter-tabs" id="filterTabs"></div>
 <div class="section-header" id="sectionHeader"></div>
@@ -335,6 +379,7 @@ let currentFilter = 'all';
 let selectedStage = 0;
 let editingId = null;
 let detailId = null;
+let searchQuery = '';
 
 // ── Sync UI helpers ─────────────────────────────────────────────
 function setSyncState(state) {
@@ -446,7 +491,12 @@ function renderTabs() {
 }
 
 function renderCards() {
-  const filtered = currentFilter === 'all' ? projects : projects.filter(p => String(p.stage) === currentFilter);
+  let filtered = currentFilter === 'all' ? projects : projects.filter(p => String(p.stage) === currentFilter);
+  if (searchQuery) filtered = filtered.filter(p =>
+    p.name.toLowerCase().includes(searchQuery) ||
+    p.desc.toLowerCase().includes(searchQuery) ||
+    p.notes.toLowerCase().includes(searchQuery)
+  );
   const container = document.getElementById('cardsContainer');
   const header = document.getElementById('sectionHeader');
 
@@ -482,6 +532,28 @@ function renderCards() {
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function setFilter(key) { currentFilter = key; render(); }
+
+function toggleSearch() {
+  const wrap = document.getElementById('searchBarWrap');
+  const btn = document.getElementById('searchToggleBtn');
+  const isOpen = wrap.classList.toggle('open');
+  btn.classList.toggle('active', isOpen);
+  if (isOpen) setTimeout(() => document.getElementById('searchInput').focus(), 320);
+  else clearSearch();
+}
+
+function onSearchInput(val) {
+  searchQuery = val.trim().toLowerCase();
+  document.getElementById('searchClear').classList.toggle('visible', val.length > 0);
+  renderCards();
+}
+
+function clearSearch() {
+  searchQuery = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchClear').classList.remove('visible');
+  renderCards();
+}
 
 // ── Modals ───────────────────────────────────────────────────────
 function openAddModal() {

@@ -27,10 +27,7 @@ priority     jsonb       DEFAULT '{}'  ← MUST BE ADDED if not done yet
 created_at   timestamptz
 ```
 
-**⚠️ IMPORTANT:** If `priority` column doesn't exist yet, run this in Supabase SQL Editor:
-```sql
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS priority jsonb DEFAULT '{}'::jsonb;
-```
+**✅ `priority` column confirmed added (June 2026).** Priority scoring is fully live.
 
 ---
 

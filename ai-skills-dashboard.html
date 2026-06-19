@@ -315,7 +315,6 @@
     transition:max-height 0.35s cubic-bezier(0.4,0,0.2,1);
     background:var(--surface);
   }
-  .priority-section.open .priority-body { max-height:700px; }
   .priority-body-inner { padding:16px; display:flex; flex-direction:column; gap:18px; }
 
   .priority-field-label {
@@ -715,7 +714,15 @@ function renderSortBar() {
 }
 
 function togglePrioritySection() {
-  document.getElementById('prioritySection').classList.toggle('open');
+  const section = document.getElementById('prioritySection');
+  const body = section.querySelector('.priority-body');
+  if (section.classList.contains('open')) {
+    body.style.maxHeight = '0px';
+    section.classList.remove('open');
+  } else {
+    section.classList.add('open');
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
 }
 
 function onSliderChange() {
@@ -828,7 +835,9 @@ function openDetail(id) {
   const score = calcScore(p);
   document.getElementById('priorityScoreDisplay').textContent = score !== null ? score : '—';
   // Reset collapsed state
-  document.getElementById('prioritySection').classList.remove('open');
+  const prioritySection = document.getElementById('prioritySection');
+  prioritySection.classList.remove('open');
+  prioritySection.querySelector('.priority-body').style.maxHeight = '0px';
   document.getElementById('detailModal').classList.add('open');
 }
 

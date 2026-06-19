@@ -197,9 +197,14 @@
     border-top:1px solid var(--border);
     transform:translateY(100%);
     transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
-    max-height:90dvh; overflow-y:auto;
+    max-height:90dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin; scrollbar-color:var(--border) transparent;
   }
   .modal-overlay.open .modal { transform:translateY(0); }
+  .modal::-webkit-scrollbar { width:6px; }
+  .modal::-webkit-scrollbar-track { background:transparent; }
+  .modal::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  .modal::-webkit-scrollbar-thumb:hover { background:var(--muted); }
   .modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 20px; }
   .modal-title { font-size:20px; font-weight:800; margin-bottom:20px; letter-spacing:-0.5px; }
 
@@ -310,7 +315,6 @@
     transition:max-height 0.35s cubic-bezier(0.4,0,0.2,1);
     background:var(--surface);
   }
-  .priority-section.open .priority-body { max-height:700px; }
   .priority-body-inner { padding:16px; display:flex; flex-direction:column; gap:18px; }
 
   .priority-field-label {
@@ -322,6 +326,7 @@
   .priority-slider {
     flex:1; -webkit-appearance:none; appearance:none;
     height:4px; border-radius:4px; background:var(--border); outline:none; cursor:pointer;
+    touch-action:pan-y;
   }
   .priority-slider::-webkit-slider-thumb {
     -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
@@ -709,7 +714,15 @@ function renderSortBar() {
 }
 
 function togglePrioritySection() {
-  document.getElementById('prioritySection').classList.toggle('open');
+  const section = document.getElementById('prioritySection');
+  const body = section.querySelector('.priority-body');
+  if (section.classList.contains('open')) {
+    body.style.maxHeight = '0px';
+    section.classList.remove('open');
+  } else {
+    section.classList.add('open');
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
 }
 
 function onSliderChange() {
@@ -822,7 +835,9 @@ function openDetail(id) {
   const score = calcScore(p);
   document.getElementById('priorityScoreDisplay').textContent = score !== null ? score : '—';
   // Reset collapsed state
-  document.getElementById('prioritySection').classList.remove('open');
+  const prioritySection = document.getElementById('prioritySection');
+  prioritySection.classList.remove('open');
+  prioritySection.querySelector('.priority-body').style.maxHeight = '0px';
   document.getElementById('detailModal').classList.add('open');
 }
 
